@@ -11,12 +11,10 @@ public class WebViewSSLPlugin: NSObject, FlutterPlugin {
 
 class WebViewSSLFactory: NSObject, FlutterPlatformViewFactory {
     private var registrar: FlutterPluginRegistrar
-    private var eventSink: FlutterEventSink?
 
     init(registrar: FlutterPluginRegistrar) {
         self.registrar = registrar
         super.init()
-        FlutterEventChannel(name: "com.example.webview_ssl", binaryMessenger: registrar.messenger()).setStreamHandler(self)
     }
 
     func create(
@@ -28,8 +26,7 @@ class WebViewSSLFactory: NSObject, FlutterPlatformViewFactory {
             frame: frame,
             viewIdentifier: viewId,
             arguments: args,
-            registrar: registrar,
-            eventSink: eventSink
+            registrar: registrar
         )
     }
 
@@ -41,17 +38,16 @@ class WebViewSSLFactory: NSObject, FlutterPlatformViewFactory {
 class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
     private let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
     private let arrayCert: NSMutableArray = NSMutableArray()
-    private var eventSink: FlutterEventSink?
+    private var mChannel: FlutterMethodChannel?
 
     init(
         frame: CGRect,
         viewIdentifier viewId: Int64,
         arguments args: Any?,
-        registrar: FlutterPluginRegistrar,
-        eventSink: FlutterEventSink?
+        registrar: FlutterPluginRegistrar
     ) {
         super.init()
-        self.eventSink = eventSink
+        self.mChannel = FlutterMethodChannel(name: "com.example.webview_ssl", binaryMessenger: registrar.messenger())
         prepareCertificates(arguments: args, registrar: registrar)
         loadUrl(arguments: args)
     }
@@ -64,9 +60,32 @@ class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, 
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if let url = navigationAction.request.url?.absoluteString {
-            eventSink?(url)
+            let arg: [String: String?] = ["url": url]
+            mChannel?.invokeMethod("onNavigate", arguments: arg, result: { (result) -> Void in
+                if result is FlutterError {
+                    decisionHandler(.cancel)
+                    return
+                }
+                if result is Bool? {
+                    let isAllow = result as? Bool ?? false
+                    decisionHandler(isAllow ? .allow : .cancel)
+                    return
+                }
+                decisionHandler(.cancel)
+            })
+        }else{
+            decisionHandler(.cancel)
         }
-        decisionHandler(.allow)
+    }
+    
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        let arg: [String: String?] = ["error": error.localizedDescription]
+        mChannel?.invokeMethod("onError", arguments: arg)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        let arg: [String: String?] = ["error": error.localizedDescription]
+        mChannel?.invokeMethod("onError", arguments: arg)
     }
 
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, 
@@ -120,14 +139,3 @@ class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
     }
 }
 
-extension WebViewSSLFactory: FlutterStreamHandler{
-    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
-        self.eventSink = events
-        return nil
-    }
-
-    func onCancel(withArguments arguments: Any?) -> FlutterError? {
-        self.eventSink = nil
-        return nil
-    }
-}

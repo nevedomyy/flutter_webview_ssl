@@ -22,12 +22,21 @@ class _MyAppState extends State<MyApp> {
         ),
         body: WebViewSSL(
           initialUrl: 'https://3dsecmt.sberbank.ru/payment/se/keys.do',
+          // initialUrl: 'https://google.com',
           sslAssets: const [
             'assets/cert/RussianTrustedRootCA.der',
             'assets/cert/RussianTrustedSubCA.der',
           ],
-          onNavigationChange: (url) {
-            print(url);
+          onNavigate: (url) {
+            if (url.contains('wikipedia.org')) {
+              print('URL decline: $url');
+              return WebViewSSLNavigation.decline;
+            }
+            print('URL allow: $url');
+            return WebViewSSLNavigation.allow;
+          },
+          onError: (error) {
+            print('ERROR: $error');
           },
         ),
       ),

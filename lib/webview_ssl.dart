@@ -2,16 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+enum WebViewSSLNavigation { allow, decline }
+
 class WebViewSSL extends StatefulWidget {
-  final Function(dynamic url)? onNavigationChange;
+  final WebViewSSLNavigation Function(String url) onNavigate;
+  final Function(String error) onError;
   final List<String> sslAssets;
   final String initialUrl;
 
   const WebViewSSL({
     super.key,
     required this.initialUrl,
+    required this.onNavigate,
+    required this.onError,
     this.sslAssets = const [],
-    this.onNavigationChange,
   });
 
   @override
@@ -19,12 +23,27 @@ class WebViewSSL extends StatefulWidget {
 }
 
 class _WebViewSSLState extends State<WebViewSSL> {
-  final eventChannel = const EventChannel('com.example.webview_ssl');
+  static const mChannel = MethodChannel('com.example.webview_ssl');
 
   @override
   void initState() {
     super.initState();
-    eventChannel.receiveBroadcastStream().listen(widget.onNavigationChange);
+    mChannel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'onNavigate':
+          final url = call.arguments['url'] as String? ?? '';
+          if (url.isNotEmpty) {
+            return widget.onNavigate(url) == WebViewSSLNavigation.allow;
+          }
+          return false;
+        case 'onError':
+          final error = call.arguments['error'] as String? ?? '';
+          if (error.isNotEmpty) {
+            widget.onError(error);
+          }
+          return Future<void>;
+      }
+    });
   }
 
   @override

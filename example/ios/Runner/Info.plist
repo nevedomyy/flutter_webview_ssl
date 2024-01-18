@@ -45,9 +45,22 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
-	<dict>
-	<key>NSAllowsArbitraryLoadsInWebContent</key>
-	<true/>
-	</dict>
+    <dict>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+		<key>sberbank.ru</key>
+		<dict>
+			<key>NSIncludesSubdomains</key>
+			<true/>
+			<key>NSExceptionAllowsInsecureHTTPLoads</key>
+			<true/>
+			<key>NSExceptionRequiresForwardSecrecy</key>
+			<false/>
+		</dict>
+		<!-- add more domain here -->
+		</dict>
+    </dict>
 </dict>
 </plist>
