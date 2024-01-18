@@ -3,25 +3,22 @@
 Add to Info.plist:
 
 ```
+<key>NSAppTransportSecurity</key>
 <dict>
-...
-	<key>NSAppTransportSecurity</key>
+    <key>NSAllowsArbitraryLoadsInWebContent</key>
+    <false/>
+    <key>NSExceptionDomains</key>
     <dict>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<false/>
-		<key>NSExceptionDomains</key>
-		<dict>
-		<key>sberbank.ru</key>
-		<dict>
-			<key>NSIncludesSubdomains</key>
-			<true/>
-			<key>NSExceptionAllowsInsecureHTTPLoads</key>
-			<true/>
-			<key>NSExceptionRequiresForwardSecrecy</key>
-			<false/>
-		</dict>
-		<!-- add more domain here -->
-		</dict>
+    <key>sberbank.ru</key>
+    <dict>
+        <key>NSIncludesSubdomains</key>
+        <true/>
+        <key>NSExceptionAllowsInsecureHTTPLoads</key>
+        <true/>
+        <key>NSExceptionRequiresForwardSecrecy</key>
+        <false/>
+    </dict>
+    <!-- add more domain here -->
     </dict>
 </dict>
 ```
@@ -36,8 +33,8 @@ Scaffold(
     body: WebViewSSL(
         initialUrl: 'https://3dsecmt.sberbank.ru/payment/se/keys.do',
         sslAssets: const [
-        'assets/cert/RussianTrustedRootCA.der',
-        'assets/cert/RussianTrustedSubCA.der',
+            'assets/cert/RussianTrustedRootCA.der',
+            'assets/cert/RussianTrustedSubCA.der',
         ],
         onNavigate: (url) {
             if (url.contains('wikipedia.org')) {
