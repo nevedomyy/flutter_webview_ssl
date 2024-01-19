@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 enum WebViewSSLNavigation { allow, decline }
 
 class WebViewSSL extends StatefulWidget {
+  static const mChannel = MethodChannel('com.example.webview_ssl');
   final WebViewSSLNavigation Function(String url) onNavigate;
   final Function(String error) onError;
   final List<String> sslAssets;
@@ -18,17 +19,17 @@ class WebViewSSL extends StatefulWidget {
     this.sslAssets = const [],
   });
 
+  static Future<void> clearCache() => mChannel.invokeMethod('clearCache');
+
   @override
   State<WebViewSSL> createState() => _WebViewSSLState();
 }
 
 class _WebViewSSLState extends State<WebViewSSL> {
-  static const mChannel = MethodChannel('com.example.webview_ssl');
-
   @override
   void initState() {
     super.initState();
-    mChannel.setMethodCallHandler((call) async {
+    WebViewSSL.mChannel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onNavigate':
           final url = call.arguments['url'] as String? ?? '';

@@ -36,8 +36,8 @@ class WebViewSSLFactory: NSObject, FlutterPlatformViewFactory {
 }
 
 class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
-    private let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
-    private let arrayCert: NSMutableArray = NSMutableArray()
+    private var webView: WKWebView = WKWebView()
+    private var arrayCert: NSMutableArray = []
     private var mChannel: FlutterMethodChannel?
 
     init(
@@ -47,13 +47,12 @@ class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
         registrar: FlutterPluginRegistrar
     ) {
         super.init()
-        self.mChannel = FlutterMethodChannel(name: "com.example.webview_ssl", binaryMessenger: registrar.messenger())
+        initVar(registrar: registrar)
         prepareCertificates(arguments: args, registrar: registrar)
         loadUrl(arguments: args)
     }
 
     func view() -> UIView {
-        webView.navigationDelegate = self
         return webView
     }
 
@@ -120,6 +119,23 @@ class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
         
         return isTrusted
     }
+    
+    private func initVar(registrar: FlutterPluginRegistrar){
+        mChannel = FlutterMethodChannel(name: "com.example.webview_ssl", binaryMessenger: registrar.messenger())
+        mChannel?.setMethodCallHandler{ [weak self] call, result in
+            if (call.method == "clearCache") {
+                self?.clearCache(result: result)
+            }
+        }
+        webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        webView.navigationDelegate = self
+        if #available(iOS 14, *) {
+            webView.configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        } else {
+            webView.configuration.preferences.javaScriptEnabled = true
+        }
+        arrayCert = []
+    }
 
     private func prepareCertificates(arguments args: Any?, registrar: FlutterPluginRegistrar){
         let argumentsDictionary = args as? Dictionary<String, Any> ?? [:]
@@ -137,5 +153,10 @@ class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
             } catch {}
         }
     }
+    
+    private func clearCache(result: @escaping FlutterResult){
+        WKWebsiteDataStore.default().removeData(ofTypes:
+            [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache],
+                modifiedSince: Date(timeIntervalSince1970: 0), completionHandler:{ result(true) })
+    }
 }
-
