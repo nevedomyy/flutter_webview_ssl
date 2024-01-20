@@ -36,7 +36,7 @@ class WebViewSSLFactory: NSObject, FlutterPlatformViewFactory {
 }
 
 class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
-    private var webView: WKWebView = WKWebView()
+    private var webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
     private var arrayCert: NSMutableArray = []
     private var mChannel: FlutterMethodChannel?
 
@@ -99,10 +99,10 @@ class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
             completionHandler(.performDefaultHandling, nil)
         }
     }
-
+    
     private func loadUrl(arguments args: Any?){
         let argumentsDictionary = args as? Dictionary<String, Any> ?? [:]
-        let initialUrl = argumentsDictionary["initialUrl"] as? String ?? ""
+        let initialUrl = argumentsDictionary["url"] as? String ?? ""
 
         let url = URL(string: initialUrl)
         if(!initialUrl.isEmpty && url != nil){
@@ -123,24 +123,30 @@ class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
     private func initVar(registrar: FlutterPluginRegistrar){
         mChannel = FlutterMethodChannel(name: "com.example.webview_ssl", binaryMessenger: registrar.messenger())
         mChannel?.setMethodCallHandler{ [weak self] call, result in
-            if (call.method == "clearCache") {
+            switch call.method{
+            case "loadUrl":
+                self?.loadUrl(arguments: call.arguments)
+            case "reload":
+                self?.reload()
+            case "clearCache":
                 self?.clearCache(result: result)
+            default:
+                result(FlutterMethodNotImplemented)
             }
         }
-        webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        webView.navigationDelegate = self
         if #available(iOS 14, *) {
             webView.configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         } else {
             webView.configuration.preferences.javaScriptEnabled = true
         }
-        arrayCert = []
+        webView.navigationDelegate = self
     }
 
     private func prepareCertificates(arguments args: Any?, registrar: FlutterPluginRegistrar){
         let argumentsDictionary = args as? Dictionary<String, Any> ?? [:]
         let sslAssets = argumentsDictionary["sslAssets"] as? Array<String> ?? []
 
+        arrayCert = []
         for asset in sslAssets{
             let key = registrar.lookupKey(forAsset: asset)
             let path = Bundle.main.url(forResource: key, withExtension: nil)
@@ -151,6 +157,12 @@ class WebViewSSL: NSObject, FlutterPlatformView, WKNavigationDelegate {
                 if(cert==nil) { continue }
                 arrayCert.add(cert!)
             } catch {}
+        }
+    }
+    
+    private func reload(){
+        if webView.url != nil {
+            webView.reload()
         }
     }
     

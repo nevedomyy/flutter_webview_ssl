@@ -4,8 +4,18 @@ import 'package:flutter/services.dart';
 
 enum WebViewSSLNavigation { allow, decline }
 
+const _mChannel = MethodChannel('com.example.webview_ssl');
+
+class WebViewSSLController {
+  static Future<void> loadUrl(String url) =>
+      _mChannel.invokeMethod('loadUrl', {'url': url});
+
+  static Future<void> reload() => _mChannel.invokeMethod('reload');
+
+  static Future<void> clearCache() => _mChannel.invokeMethod('clearCache');
+}
+
 class WebViewSSL extends StatefulWidget {
-  static const mChannel = MethodChannel('com.example.webview_ssl');
   final WebViewSSLNavigation Function(String url) onNavigate;
   final Function(String error) onError;
   final List<String> sslAssets;
@@ -19,8 +29,6 @@ class WebViewSSL extends StatefulWidget {
     this.sslAssets = const [],
   });
 
-  static Future<void> clearCache() => mChannel.invokeMethod('clearCache');
-
   @override
   State<WebViewSSL> createState() => _WebViewSSLState();
 }
@@ -29,7 +37,7 @@ class _WebViewSSLState extends State<WebViewSSL> {
   @override
   void initState() {
     super.initState();
-    WebViewSSL.mChannel.setMethodCallHandler((call) async {
+    _mChannel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onNavigate':
           final url = call.arguments['url'] as String? ?? '';
@@ -56,7 +64,7 @@ class _WebViewSSLState extends State<WebViewSSL> {
           layoutDirection: TextDirection.ltr,
           creationParamsCodec: const StandardMessageCodec(),
           creationParams: {
-            'initialUrl': widget.initialUrl,
+            'url': widget.initialUrl,
             'sslAssets': widget.sslAssets,
           },
         );
