@@ -11,13 +11,12 @@ class WebViewSSLController {
       _mChannel.invokeMethod('loadUrl', {'url': url});
 
   static Future<void> reload() => _mChannel.invokeMethod('reload');
-
-  static Future<void> clearCache() => _mChannel.invokeMethod('clearCache');
 }
 
 class WebViewSSL extends StatefulWidget {
   final WebViewSSLNavigation Function(String url) onNavigate;
   final Function(String error) onError;
+  final bool clearCacheOnDispose;
   final List<String> sslAssets;
   final String initialUrl;
 
@@ -27,6 +26,7 @@ class WebViewSSL extends StatefulWidget {
     required this.onNavigate,
     required this.onError,
     this.sslAssets = const [],
+    this.clearCacheOnDispose = true,
   });
 
   @override
@@ -53,6 +53,14 @@ class _WebViewSSLState extends State<WebViewSSL> {
           return Future<void>;
       }
     });
+  }
+
+  @override
+  void dispose() {
+    if (widget.clearCacheOnDispose) {
+      _mChannel.invokeMethod('clearCache');
+    }
+    super.dispose();
   }
 
   @override
